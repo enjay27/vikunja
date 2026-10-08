@@ -1,0 +1,5 @@
+# Real settings and the data never leave the NAS.
+.env
+data/
+backups/
+__pycache__/

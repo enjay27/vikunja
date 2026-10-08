@@ -1,0 +1,22 @@
+# Vikunja on a Synology NAS (Container Manager project). See README.md.
+# The image is pinned: upgrading is a deliberate commit (README, "Upgrade").
+services:
+  vikunja:
+    image: vikunja/vikunja:2.7.0
+    restart: unless-stopped
+    mem_limit: 512m
+    user: "1000:1000"
+    env_file: .env
+    environment:
+      VIKUNJA_DATABASE_PATH: /db/vikunja.db
+      # Users are created with the CLI (README, "First start"), never by sign-up.
+      VIKUNJA_SERVICE_ENABLEREGISTRATION: "false"
+      VIKUNJA_SERVICE_ENABLETOTP: "true"
+      VIKUNJA_RATELIMIT_ENABLED: "true"
+    ports:
+      # Only the NAS reverse proxy (on the same host) reaches it.
+      - "127.0.0.1:3456:3456"
+    volumes:
+      - ./data/db:/db
+      - ./data/files:/app/vikunja/files
+      - ./backups:/backups
