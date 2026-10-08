@@ -66,6 +66,11 @@ class Compose(unittest.TestCase):
         for mount in mounts:
             self.assertRegex(mount, r"^\./(data|backups)(/|$)", mount)
 
+    def test_the_container_user_comes_from_the_env_file(self):
+        # DSM owns the folders by its own user (1026:100 for the first one), not by 1000: a fixed
+        # user in this file made the first deploy fail with "permission denied".
+        self.assertRegex(self.compose, r'(?m)^\s+user:\s*"\$\{VIKUNJA_UID:\?[^}]+\}:\$\{VIKUNJA_GID:\?[^}]+\}"$')
+
     def test_secrets_come_from_the_env_file_not_the_compose_file(self):
         self.assertRegex(self.compose, r"(?m)^\s+env_file:\s*\.env$")
         self.assertNotRegex(self.compose, r"VIKUNJA_SERVICE_SECRET")
@@ -77,6 +82,11 @@ class EnvFile(unittest.TestCase):
         for key in ("VIKUNJA_SERVICE_PUBLICURL", "VIKUNJA_SERVICE_SECRET", "VIKUNJA_SERVICE_TIMEZONE"):
             self.assertRegex(example, rf"(?m)^{key}=", key)
         self.assertRegex(example, r"(?m)^VIKUNJA_SERVICE_SECRET=change-me")
+
+    def test_the_example_has_numeric_ids_for_the_container_user(self):
+        example = read(".env.example")
+        self.assertRegex(example, r"(?m)^VIKUNJA_UID=\d+$")
+        self.assertRegex(example, r"(?m)^VIKUNJA_GID=\d+$")
 
     def test_the_real_env_file_and_the_data_are_not_tracked(self):
         ignore = read(".gitignore").splitlines()
@@ -90,6 +100,12 @@ class Scripts(unittest.TestCase):
         self.assertTrue(script.startswith("#!/usr/bin/env bash\n"))
         self.assertIn("set -euo pipefail", script)
         self.assertIn("-mtime +14", script)
+
+    def test_backup_script_works_with_docker_compose_v1_and_v2(self):
+        # DSM's Container Manager may only have the hyphenated command.
+        script = read("scripts/backup.sh")
+        self.assertIn("docker-compose", script)
+        self.assertIn("docker compose version", script)
 
     @unittest.skipUnless(shutil.which("bash"), "no bash")
     def test_backup_script_parses(self):

@@ -5,7 +5,8 @@ services:
     image: vikunja/vikunja:2.7.0
     restart: unless-stopped
     mem_limit: 512m
-    user: "1000:1000"
+    # The owner of data/ and backups/ on the NAS, from .env (DSM does not use 1000).
+    user: "${VIKUNJA_UID:?set VIKUNJA_UID in .env}:${VIKUNJA_GID:?set VIKUNJA_GID in .env}"
     env_file: .env
     environment:
       VIKUNJA_DATABASE_PATH: /db/vikunja.db

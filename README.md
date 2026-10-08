@@ -19,10 +19,12 @@ is where they are looked at (plan: `stella-rain/app`, `docs/plans/`).
 
 1. Copy this folder to `/volume1/docker/vikunja` (File Station or `git clone`).
 2. `cp .env.example .env`; set `VIKUNJA_SERVICE_PUBLICURL` to the HTTPS address you will serve,
-   and `VIKUNJA_SERVICE_SECRET` to `openssl rand -hex 32`.
-3. Make the data folders writable by the container user (1000):
-   `mkdir -p data/db data/files backups && chown -R 1000:1000 data backups`.
-   If DSM's file permissions refuse, give the folder Read/Write to user ID 1000 in its ACL.
+   and `VIKUNJA_SERVICE_SECRET` to `openssl rand -hex 32`. Run `id` over SSH as the user who
+   owns the folder and put its numbers in `VIKUNJA_UID` and `VIKUNJA_GID` (DSM: 1026 and 100).
+3. Create the data folders as that same user, so they are already writable:
+   `mkdir -p data/db data/files backups`. Check with `ls -ln`; the owner must match the two
+   numbers. (A container user that does not own the folders restarts in a loop with
+   "permission denied" in `docker-compose logs`.)
 4. Container Manager, Project, Create: path `/volume1/docker/vikunja`, use the existing
    `compose.yaml`, start.
 5. Reverse proxy: Control Panel, Login Portal, Advanced, Reverse Proxy, Create. Source HTTPS,
@@ -36,9 +38,9 @@ is where they are looked at (plan: `stella-rain/app`, `docs/plans/`).
 Registration is off, so create the one user from the command line, then sign in and turn on
 two-factor authentication in the settings (it is enabled in the compose file):
 
-    docker compose exec vikunja /app/vikunja/vikunja user create --help
+    docker-compose exec vikunja /app/vikunja/vikunja user create --help
 
-Use the options it lists (username, email, password). From an iPhone, open the address in
+(`docker compose` with a space on newer installs.) Use the options it lists (username, email, password). From an iPhone, open the address in
 Safari and use Share, Add to Home Screen.
 
 ## Security of a board on the internet
